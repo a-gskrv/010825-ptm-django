@@ -239,21 +239,40 @@ from django.db.models import Subquery
 
 
 
-from rest_framework import serializers
-from my_app.models import Category
+# from rest_framework import serializers
+# from my_app.models import Category
+#
+#
+# class CategoriesSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Category
+#         # fields = ['id', 'name'] # если нужны конкретные поля -- берём список
+#         fields = '__all__' # если нужны ВСЕ поля -- берём строку
+#
+#
+# categories = Category.objects.all()
+#
+# print(categories)
+#
+# serializer = CategoriesSerializer(categories, many=True)  # ПО УМОЛЧАНИЮ сериализаторы ожидают ОДИН объект на вход
+#
+# print(serializer.data)
+
+from django.db.models import Count
+from django.db.models.functions import ExtractYear
+
+from my_app.models import Book
 
 
-class CategoriesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        # fields = ['id', 'name'] # если нужны конкретные поля -- берём список
-        fields = '__all__' # если нужны ВСЕ поля -- берём строку
+# books = Book.objects.filter(
+#     published_date__year__gte=2000
+# )
 
+books = Book.objects.annotate(
+    pub_year=ExtractYear('published_date')
+).values('pub_year').annotate(
+    count=Count('id')
+).order_by('-pub_year')
 
-categories = Category.objects.all()
-
-print(categories)
-
-serializer = CategoriesSerializer(categories, many=True)  # ПО УМОЛЧАНИЮ сериализаторы ожидают ОДИН объект на вход
-
-print(serializer.data)
+for book in books:
+    print(book)

@@ -1,12 +1,76 @@
+from django.db.models import QuerySet
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status
-from django.db.models import QuerySet
+from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 
 from my_app.models import Book
 from my_app.serializers import BooksSerializer, BookCreateSerializer, BookUpdateSerializer
+
+
+class BooksListAPIView(APIView, PageNumberPagination):
+    page_size = 5
+
+    def get_queryset(self):
+        queryset = Book.objects.all()  # SELECT * FROM books;
+
+        authors = self.request.query_params.getlist('author')
+        date_from = self.request.query_params.get('from')
+        date_to = self.request.query_params.get('to')
+        sort_by = self.request.query_params.get('sort_by')
+        sort_order = self.request.query_params.get('order', 'asc')
+
+        if authors:
+            queryset = queryset.filter(  # SELECT * FROM books WHERE author = '%s'
+                author__last_name__in=authors
+            )
+
+        if date_from:
+            queryset = queryset.filter(  # SELECT * FROM books WHERE author = '%s'
+                published_date__year__gte=date_from
+            )
+
+        if date_to:
+            queryset = queryset.filter(  # SELECT * FROM books WHERE author = '%s'
+                published_date__year__lte=date_to
+            )
+
+        if sort_by:
+            if sort_order == 'desc':
+                sort_by = f"-{sort_by}"
+
+            queryset = queryset.order_by(
+                sort_by
+            )
+
+        return queryset
+
+    def get_page_size(self, request: Request):
+        page_size = request.query_params.get('page_size')
+
+        if page_size and page_size.isdigit():
+            return int(page_size)
+        return self.page_size
+
+    def get(self, request: Request, *args, **kwargs) -> Response:
+        queryset = self.get_queryset()
+
+        page_size = self.get_page_size(request)
+        self.page_size = page_size
+        results = self.paginate_queryset(
+            queryset=queryset,
+            request=request,
+            view=self
+        )
+
+        serializer = BooksSerializer(results, many=True)
+
+        return self.get_paginated_response(
+            data=serializer.data,
+        )
 
 
 # получить список всех книг
