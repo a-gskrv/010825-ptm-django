@@ -1,14 +1,34 @@
 from django.db.models import QuerySet
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
+
 
 from my_app.models import Book
 from my_app.serializers import BooksSerializer, BookCreateSerializer, BookUpdateSerializer
+
+
+class BooksListFiltersGenericView(ListAPIView):
+    queryset = Book.objects.all()
+    serializer_class = BooksSerializer
+
+    # filters
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
+    filterset_fields = ['genre', 'author__last_name']
+    search_fields = ['title', 'description']
+    ordering_fields = ['price', 'published_date']
+
 
 
 class BooksListAPIView(APIView, PageNumberPagination):

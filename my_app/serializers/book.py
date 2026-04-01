@@ -57,6 +57,7 @@ class BooksSerializer(serializers.ModelSerializer):
             'price',
             'discounted_price',
             'category',
+            'genre',
             'is_bestseller',
             'author',
             'publisher'
